@@ -9,8 +9,17 @@ def subsequence(A, B, value):
 def reconstruct(A, B, value, dp):
     result = []
     i, j = len(A), len(B)
-
-    return dp[i][j], ''.join(result)
+    while i > 0 and j > 0:
+        if A[i-1] == B[j-1]:
+            i -= 1
+            j -= 1
+            result.append(A[i-1])  
+        elif dp[i-1][j] >= dp[i][j-1]:
+            i -= 1
+        else:
+            j -= 1
+    
+    return dp[len(A)][len(B)], ''.join(result)
 
 def read_input(filename):
     with open(filename, 'r') as f:
