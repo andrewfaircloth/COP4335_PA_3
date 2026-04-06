@@ -45,7 +45,7 @@ def read_input(filename):
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: python weighted_lcs.py <input_file> <output_file>")
+        print("Usage: python subsequence.py <input_file> <output_file>")
         return
 
     filename = sys.argv[1]
@@ -57,6 +57,9 @@ def main():
     with open(output_file, 'w') as f:
         f.write(f"{max_val}\n")
         f.write(subseq + "\n")
+
+    print(f"Max value: {max_val}")
+    print(f"Subsequence: {subseq}")
 
 if __name__ == "__main__":
     main()
