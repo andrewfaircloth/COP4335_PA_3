@@ -1,79 +1,94 @@
-# THIS FILE IS COPIED FROM https://github.com/andrewfaircloth/COP4533_PA_1
-# THIS WILL BE MODIFIED TO FIT THE NEW PROBLEM STATEMENT
-
-
 import time
 import random
+import string
 import os
-from pathlib import Path
-from subsequence import subsequence
-
-def generate_random_data(n, filename="src/temp_data.in"):
-    imputFile = Path(filename)
-    imputFile.touch(exist_ok=True)
+from subsequence import read_input, subsequence
 
 
-    with open(imputFile, "w") as f:
-        f.write(f"{n}\n")
-        # Generate random hospital preferences
-        for _ in range(n):
-            prefs = random.sample(range(1, n + 1), n)
-            for pref in prefs:
-                f.write(f"{pref} ")
-            f.write("\n")
-            # print(prefs)
-        # Generate random student preferences
-        for _ in range(n):
-            prefs = random.sample(range(1, n + 1), n)
-            for pref in prefs:
-                f.write(f"{pref} ")
-            f.write("\n")
-            # print(prefs)
-    return imputFile
+def create_input_file(path, alphabet, value_map, A, B):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(str(len(alphabet)) + "\n")
+        for char in alphabet:
+            f.write(char + " " + str(value_map[char]) + "\n")
+        f.write(A + "\n")
+        f.write(B + "\n")
+    return
 
 
-def run_benchmarks():
-    n_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
-    matcher_times = []
-    verifier_times = []
+def generate_random_input_file(path, length, alphabet_size=7):
+    alphabet = random.sample(string.ascii_lowercase, alphabet_size)
+    value_map = {}
+    for char in alphabet:
+        value_map[char] = random.randint(1, 20)
 
-    for n in n_list:
-        dataFilename = generate_random_data(n)
+    A = ""
+    for _ in range(length):
+        A += random.choice(alphabet)
 
-        ## measure matcher time
-        start = time.perf_counter()
-        matcher_output = matcher(dataFilename, "src/temp_data.out")
-        end = time.perf_counter()
-        print(f"Matcher: n={n}, time={end-start:.6f}s")
-        matcher_times.append(end - start)
+    B = ""
+    for _ in range(length):
+        B += random.choice(alphabet)
 
-        ## measure verifier time
-        start = time.perf_counter()
-        verifier_result = verifier(dataFilename, "src/temp_data.out")
-        end = time.perf_counter()
+    create_input_file(path, alphabet, value_map, A, B)
 
-        if verifier_result == -1:
-            print(f"n={n}, VERIFIER FAILED")
-            print("Stopping benchmarks.")
-            print("Input data was:")
-            with open(dataFilename, "r") as f:
-                for line in f:
-                    print(line.strip())
-            print("Matcher output was:")
-            for line in matcher_output:
-                print(line)
-            break
+    return
 
-        print(f"Verifier: n={n}, time={end-start:.6f}s")
-        verifier_times.append(end - start)
 
-    return n_list, matcher_times, verifier_times
+def create_input_files(output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
+    lengths = [25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800]
+    input_paths = []
+
+    for i in range(len(lengths)):
+        filename = os.path.join(output_dir, "input_" + str(i + 1).zfill(2) + ".in")
+        if not os.path.exists(filename):
+            generate_random_input_file(filename, lengths[i], alphabet_size=7)
+        input_paths.append(filename)
+
+    return input_paths
+
+
+def run_benchmarks(input_files):
+    results = []
+
+    for input_path in input_files:
+        start_time = time.perf_counter()
+        A, B, value = read_input(input_path)
+        max_val, subsequence_result = subsequence(A, B, value)
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+
+        output_path = input_path.replace(".in", ".out")
+        with open(output_path, "w") as f:
+            f.write(str(max_val) + "\n")
+            f.write(subsequence_result + "\n")
+
+        results.append((len(A), len(B), elapsed))
+        # print("|A|=" + str(len(A)) + ", |B|=" + str(len(B)) + ", time=" + "{:.6f}".format(elapsed) + "s")
+
+    return results
+
+
+def main():
+    script_dir = os.path.dirname(__file__)
+    parent_dir = os.path.dirname(script_dir)
+    data_dir = os.path.join(parent_dir, "data", "benchmark_inputs")
+
+    input_files = create_input_files(data_dir)
+
+    print("Input files found")
+
+    print("Running benchmark files")
+    results = run_benchmarks(input_files)
+
+    print("\nBenchmark summary:")
+    print("|A|\t|B|\tTime(s)")
+    for row in results:
+        print(str(row[0]) + "\t" + str(row[1]) + "\t" + "{:.6f}".format(row[2]))
+
 
 if __name__ == "__main__":
-    n_list, matcher_times, verifier_times = run_benchmarks()
-    print("\nBenchmark Results:")
-    print("N\tMatcher Time (s)\tVerifier Time (s)")
-    for n, m_time, v_time in zip(n_list, matcher_times, verifier_times):
-        print(f"{n}\t{m_time:.6f}\t\t{v_time:.6f}")
-    os.remove("src/temp_data.in")
-    os.remove("src/temp_data.out")
+    main()
+    
